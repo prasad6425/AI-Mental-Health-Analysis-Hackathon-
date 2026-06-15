@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "impact": "Platform Impact",
+    "dashboard": "Dashboard",
+    "rewards": "Rewards",
+    "games": "Mind Games",
+    "routine": "7-Day Routine",
+    "therapist": "Therapist",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "greeting": "Good morning",
+    "subtitle": "Here is your live, real-time AI sentiment analysis",
+    "mood_score": "Live Mood Score",
+    "stress_level": "Live Stress Level",
+    "burnout_risk": "Burnout Risk",
+    "stability": "Emotional Stability",
+    "current_wellness": "Current Wellness Score",
+    "therapy_progress": "Therapy Goal Progress",
+    "level": "Level",
+    "xp": "XP",
+    "streak": "Day Streak",
+    "keep_it_up": "Keep it up!",
+    "game_insight": "Game Behavior Insight"
+  },
+  "rewards": {
+    "title": "Rewards & Achievements 🏆",
+    "subtitle": "Track your mental wellness journey and unlock badges.",
+    "level": "Level",
+    "wellness_points": "Wellness Points",
+    "progress_to": "Progress to Level",
+    "badges": "Achievement Badges",
+    "download_cert": "Download Certificate"
+  },
+  "chat": {
+    "placeholder": "Type your message...",
+    "send": "Send"
+  }
+}

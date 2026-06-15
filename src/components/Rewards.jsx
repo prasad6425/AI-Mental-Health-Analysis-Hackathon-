@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { jsPDF } from 'jspdf'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Trophy, Star, Medal, Award, CheckCircle2, Shield, Flame, Download, Lock } from 'lucide-react'
 import { getStreaks, getUserProfile } from '../lib/db'
 
@@ -36,6 +37,7 @@ const allBadges = [
 export default function Rewards({ authUserId }) {
   const [streaks, setStreaks] = useState({ current_streak: 0, total_xp: 0 })
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -130,8 +132,8 @@ export default function Rewards({ authUserId }) {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Rewards & Achievements 🏆</h1>
-        <p className="text-slate-400">Track your mental wellness journey and unlock badges.</p>
+        <h1 className="text-3xl font-bold text-white mb-2">{t('rewards.title')}</h1>
+        <p className="text-slate-400">{t('rewards.subtitle')}</p>
       </div>
 
       {/* Level Card */}
@@ -141,7 +143,7 @@ export default function Rewards({ authUserId }) {
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
           <div className="w-32 h-32 rounded-full bg-slate-800 border-4 border-slate-700 flex flex-col items-center justify-center flex-shrink-0 shadow-2xl relative">
             <div className={`absolute inset-0 rounded-full border-4 border-transparent border-t-${levelInfo.color.split('-')[1]}-400 rotate-45`} />
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Level</span>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{t('rewards.level')}</span>
             <span className={`text-4xl font-black ${levelInfo.color}`}>{levelInfo.id}</span>
           </div>
           
@@ -149,12 +151,12 @@ export default function Rewards({ authUserId }) {
             <h2 className={`text-3xl font-bold mb-2 ${levelInfo.color}`}>{levelInfo.title}</h2>
             <p className="text-slate-400 mb-6 flex items-center justify-center md:justify-start gap-2">
               <Star size={18} className="text-amber-400" />
-              <span className="font-semibold text-white">{streaks.total_xp}</span> / {levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} Wellness Points
+              <span className="font-semibold text-white">{streaks.total_xp}</span> / {levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} {t('rewards.wellness_points')}
             </p>
             
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-medium text-slate-400 px-1">
-                <span>Progress to Level {Math.min(5, levelInfo.id + 1)}</span>
+                <span>{t('rewards.progress_to')} {Math.min(5, levelInfo.id + 1)}</span>
                 <span>{Math.round(levelInfo.progress)}%</span>
               </div>
               <div className="h-3 bg-slate-800 rounded-full overflow-hidden border border-white/5">
@@ -172,7 +174,7 @@ export default function Rewards({ authUserId }) {
 
       {/* Badges Grid */}
       <div>
-        <h3 className="text-xl font-bold text-white mb-4">Achievement Badges</h3>
+        <h3 className="text-xl font-bold text-white mb-4">{t('rewards.badges')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {allBadges.map((badge, idx) => {
             const isUnlocked = badge.condition(streaks)
@@ -214,7 +216,7 @@ export default function Rewards({ authUserId }) {
           className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all flex-shrink-0 ${levelInfo.id >= 5 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20 hover:scale-105' : 'bg-slate-800 text-slate-500 cursor-not-allowed'}`}
         >
           <Download size={18} />
-          Download Certificate
+          {t('rewards.download_cert')}
         </button>
       </motion.div>
 

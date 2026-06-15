@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Send, Bot, Sparkles } from 'lucide-react'
 import { subscribeToChats, saveChatMessage, getChatHistory } from '../lib/db'
 import { sendChatMessageApi } from '../lib/api'
@@ -24,6 +25,13 @@ export default function ChatBot({ user, authUserId }) {
   const [typing, setTyping] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
   const bottomRef = useRef(null)
+  const { t, i18n } = useTranslation()
+  const [chatLanguage, setChatLanguage] = useState(i18n.language)
+
+  // Keep chatLanguage in sync initially but allow divergence
+  useEffect(() => {
+    setChatLanguage(i18n.language)
+  }, [i18n.language])
 
   // Load chat history from Supabase on mount and subscribe to realtime
   useEffect(() => {
@@ -63,16 +71,9 @@ export default function ChatBot({ user, authUserId }) {
     setMessages(m => [...m, { id: tempId, role: 'user', text }])
     setTyping(true)
 
-    // Save user message to Supabase
-    // Gemini API integration will be implemented later — message will be sent to Gemini for response
-    // Real-time sentiment update from BERT will appear here
-    if (authUserId) {
-      await saveChatMessage(authUserId, 'user', text)
-    }
-
     // Call FastAPI backend for Gemini + DistilBERT + DB saving
     try {
-      const response = await sendChatMessageApi(text, messages);
+      const response = await sendChatMessageApi(text, messages, chatLanguage);
       const data = response.data;
       
       // Update the UI with AI response (optimistic update since we no longer rely on realtime for this)
@@ -100,7 +101,19 @@ export default function ChatBot({ user, authUserId }) {
             <div className="text-sm font-semibold text-white">MindWell AI</div>
             <div className="text-xs text-green-400">Online • Always here for you</div>
           </div>
-          <Sparkles size={14} className="ml-auto text-purple-400" />
+          <div className="ml-auto flex items-center gap-2">
+            <select
+              value={chatLanguage}
+              onChange={(e) => setChatLanguage(e.target.value)}
+              className="bg-slate-800 text-slate-300 text-[10px] border border-white/5 rounded px-1.5 py-0.5 outline-none focus:border-blue-500/50"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी</option>
+              <option value="mr">मराठी</option>
+              <option value="ta">தமிழ்</option>
+            </select>
+            <Sparkles size={14} className="text-purple-400" />
+          </div>
         </div>
         {/* Real-time sentiment update from BERT will appear here */}
         <div className="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
@@ -151,9 +164,10 @@ export default function ChatBot({ user, authUserId }) {
       <div className="p-4 border-t border-white/5 flex-shrink-0">
         <div className="flex gap-2">
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder="Share how you're feeling..."
+            placeholder={t('chat.placeholder')}
             className="flex-1 bg-slate-800/50 border border-slate-700 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-all" />
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={send}
+            title={t('chat.send')}
             className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
             <Send size={16} />
           </motion.button>

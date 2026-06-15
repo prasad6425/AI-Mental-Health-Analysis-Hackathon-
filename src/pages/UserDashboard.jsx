@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { LayoutDashboard, Gamepad2, Calendar, UserCheck, Settings, LogOut, Brain, Menu, X, Activity } from 'lucide-react'
 import DashboardHome from '../components/DashboardHome'
 import MindGames from '../components/MindGames'
@@ -24,6 +25,12 @@ const navItems = [
 export default function UserDashboard({ user, authUserId, onLogout }) {
   const [active, setActive] = useState('impact')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { i18n } = useTranslation()
+
+  const handleLanguageChange = (e) => {
+    i18n.changeLanguage(e.target.value)
+    localStorage.setItem('appLanguage', e.target.value)
+  }
 
   const pageMap = {
     impact: <PlatformImpact />,
@@ -86,8 +93,20 @@ export default function UserDashboard({ user, authUserId, onLogout }) {
             <Brain size={18} className="text-blue-400" />
             <span className="font-bold gradient-text">MindWell</span>
           </div>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
-            {user?.name?.[0] || 'U'}
+          <div className="flex items-center gap-3">
+            <select
+              value={i18n.language}
+              onChange={handleLanguageChange}
+              className="bg-transparent text-white text-xs border border-white/10 rounded px-1 py-1 focus:outline-none"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी</option>
+              <option value="mr">मराठी</option>
+              <option value="ta">தமிழ்</option>
+            </select>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white">
+              {user?.name?.[0] || 'U'}
+            </div>
           </div>
         </div>
 
@@ -121,6 +140,8 @@ export default function UserDashboard({ user, authUserId, onLogout }) {
 }
 
 function SidebarContent({ active, setActive, onLogout, user }) {
+  const { t, i18n } = useTranslation();
+
   return (
     <div className="flex flex-col h-full">
 
@@ -137,23 +158,39 @@ function SidebarContent({ active, setActive, onLogout, user }) {
         </div>
       </div>
 
-      {/* User card */}
-      <div className="mx-3 mt-4 p-3 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex-shrink-0">
+      {/* User card & Language */}
+      <div className="mx-3 mt-4 p-3 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex-shrink-0 flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
             {user?.name?.[0] || 'U'}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-white truncate">{user?.name || 'User'}</div>
             <div className="text-xs text-slate-400 capitalize">{user?.category || 'adult'} · Active</div>
           </div>
           <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400">🌐</span>
+          <select
+            value={i18n.language}
+            onChange={(e) => {
+              i18n.changeLanguage(e.target.value)
+              localStorage.setItem('appLanguage', e.target.value)
+            }}
+            className="flex-1 bg-slate-800 text-slate-300 text-xs border border-white/5 rounded px-2 py-1 outline-none focus:border-blue-500/50"
+          >
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+            <option value="ta">தமிழ்</option>
+          </select>
+        </div>
       </div>
 
       {/* Nav items */}
       <nav className="flex-1 px-3 mt-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ id, label, icon: Icon }) => (
+        {navItems.map(({ id, icon: Icon }) => (
           <motion.button
             key={id}
             whileHover={{ x: 4 }}
@@ -166,7 +203,7 @@ function SidebarContent({ active, setActive, onLogout, user }) {
             }`}
           >
             <Icon size={18} className={active === id ? 'text-blue-400' : 'text-slate-500'} />
-            <span>{label}</span>
+            <span>{t(`nav.${id}`)}</span>
             {active === id && (
               <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
             )}
@@ -182,7 +219,7 @@ function SidebarContent({ active, setActive, onLogout, user }) {
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
         >
           <LogOut size={18} />
-          Logout
+          {t('nav.logout')}
         </motion.button>
       </div>
 

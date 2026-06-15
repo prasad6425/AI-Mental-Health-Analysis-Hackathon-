@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain, Trophy, Gamepad2 } from 'lucide-react'
 import { getWellnessScore, subscribeToWellnessScore, getAnomalyAlerts, subscribeToAnomalyAlerts, getStreaks } from '../lib/db'
 
@@ -28,6 +29,7 @@ export default function DashboardHome({ user }) {
   const [scoreData, setScoreData] = useState(null)
   const [alerts, setAlerts] = useState([])
   const [streakData, setStreakData] = useState({ current_streak: 0, total_xp: 0 })
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (!user?.id) return;
@@ -54,15 +56,15 @@ export default function DashboardHome({ user }) {
   const recovery = scoreData?.recovery_progress ?? 50
 
   const statCards = [
-    { label: 'Live Mood Score', value: overall, unit: '/100', icon: Heart, color: 'from-pink-500 to-rose-500', bg: 'from-pink-500/10 to-rose-500/10', border: 'border-pink-500/20' },
-    { label: 'Live Stress Level', value: (100 - stability), unit: '/100', icon: Zap, color: 'from-amber-500 to-orange-500', bg: 'from-amber-500/10 to-orange-500/10', border: 'border-amber-500/20' },
-    { label: 'Burnout Risk', value: burnout, unit: '', icon: AlertTriangle, color: 'from-teal-500 to-green-500', bg: 'from-teal-500/10 to-green-500/10', border: 'border-teal-500/20' },
-    { label: 'Emotional Stability', value: stability, unit: '/100', icon: Activity, color: 'from-blue-500 to-purple-500', bg: 'from-blue-500/10 to-purple-500/10', border: 'border-blue-500/20' },
+    { label: t('dashboard.mood_score'), value: overall, unit: '/100', icon: Heart, color: 'from-pink-500 to-rose-500', bg: 'from-pink-500/10 to-rose-500/10', border: 'border-pink-500/20' },
+    { label: t('dashboard.stress_level'), value: (100 - stability), unit: '/100', icon: Zap, color: 'from-amber-500 to-orange-500', bg: 'from-amber-500/10 to-orange-500/10', border: 'border-amber-500/20' },
+    { label: t('dashboard.burnout_risk'), value: burnout, unit: '', icon: AlertTriangle, color: 'from-teal-500 to-green-500', bg: 'from-teal-500/10 to-green-500/10', border: 'border-teal-500/20' },
+    { label: t('dashboard.stability'), value: stability, unit: '/100', icon: Activity, color: 'from-blue-500 to-purple-500', bg: 'from-blue-500/10 to-purple-500/10', border: 'border-blue-500/20' },
   ]
 
   const wellnessCards = [
-    { label: 'Current Wellness Score', value: overall, icon: Star, color: '#60a5fa' },
-    { label: 'Therapy Goal Progress', value: recovery, icon: TrendingUp, color: '#34d399' },
+    { label: t('dashboard.current_wellness'), value: overall, icon: Star, color: '#60a5fa' },
+    { label: t('dashboard.therapy_progress'), value: recovery, icon: TrendingUp, color: '#34d399' },
   ]
 
   const levelInfo = getLevelInfo(streakData.total_xp || 0)
@@ -73,8 +75,8 @@ export default function DashboardHome({ user }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Good morning, {user?.name?.split(' ')[0] || 'there'} 🌅</h1>
-          <p className="text-slate-400 text-sm mt-1">Here is your live, real-time AI sentiment analysis</p>
+          <h1 className="text-2xl font-bold text-white">{t('dashboard.greeting')}, {user?.name?.split(' ')[0] || 'there'} 🌅</h1>
+          <p className="text-slate-400 text-sm mt-1">{t('dashboard.subtitle')}</p>
         </div>
         <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
           <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -191,10 +193,10 @@ export default function DashboardHome({ user }) {
             </div>
             <div className="flex-1">
               <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                Level {levelInfo.id}: {levelInfo.title}
+                {t('dashboard.level')} {levelInfo.id}: {levelInfo.title}
               </h3>
               <p className="text-slate-400 text-sm mb-3">
-                <span className="font-bold text-amber-400">{streakData.total_xp || 0}</span> / {levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} XP
+                <span className="font-bold text-amber-400">{streakData.total_xp || 0}</span> / {levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} {t('dashboard.xp')}
               </p>
               <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                 <motion.div 
@@ -210,15 +212,15 @@ export default function DashboardHome({ user }) {
             <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700">
               <Flame size={20} className="text-orange-400" />
               <div>
-                <div className="text-sm font-bold text-white">{streakData.current_streak || 0} Day Streak</div>
-                <div className="text-xs text-slate-400">Keep it up!</div>
+                <div className="text-sm font-bold text-white">{streakData.current_streak || 0} {t('dashboard.streak')}</div>
+                <div className="text-xs text-slate-400">{t('dashboard.keep_it_up')}</div>
               </div>
             </div>
             
             <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700">
               <Gamepad2 size={20} className="text-purple-400" />
               <div>
-                <div className="text-xs text-slate-400">Game Behavior Insight</div>
+                <div className="text-xs text-slate-400">{t('dashboard.game_insight')}</div>
                 <div className="text-sm font-bold text-purple-300">{behavioralInsight}</div>
               </div>
             </div>

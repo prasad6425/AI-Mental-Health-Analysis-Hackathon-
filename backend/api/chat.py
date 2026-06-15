@@ -14,7 +14,7 @@ async def chat(chat_req: ChatMessageCreate, user = Depends(get_current_user)):
         sentiment = analyze_sentiment(chat_req.message)
         
         # 2. Run Gemini Chatbot
-        ai_reply = get_gemini_response(chat_req.message, chat_req.history)
+        ai_reply = get_gemini_response(chat_req.message, chat_req.history, chat_req.language)
         
         # 3. Save User Message
         supabase.table("chat_messages").insert({

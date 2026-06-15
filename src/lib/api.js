@@ -27,8 +27,8 @@ export const submitAssessmentApi = async (category, answers) => {
   return response.data
 }
 
-export const sendChatMessageApi = async (message, history = []) => {
-  const response = await api.post('/chat/', { message, history })
+export const sendChatMessageApi = async (message, history = [], language = 'en') => {
+  const response = await api.post('/chat/', { message, history, language })
   return response.data
 }
 

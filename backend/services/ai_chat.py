@@ -4,17 +4,25 @@ from backend.core.config import settings
 if settings.GEMINI_API_KEY:
     genai.configure(api_key=settings.GEMINI_API_KEY)
 
-def get_gemini_response(user_message: str, history: list = None) -> str:
+def get_gemini_response(user_message: str, history: list = None, language: str = 'en') -> str:
     """
     Sends the user message and history to Gemini and returns the AI response.
     """
     if not settings.GEMINI_API_KEY:
         return "Gemini API key is missing. Please add it to your .env file."
 
+    lang_map = {
+        "en": "English",
+        "hi": "Hindi",
+        "mr": "Marathi",
+        "ta": "Tamil"
+    }
+    preferred_lang = lang_map.get(language, "English")
+
     # Configure the model
     model = genai.GenerativeModel(
         model_name="gemini-2.5-flash",
-        system_instruction="You are MindWell AI, a compassionate, empathetic, and professional mental wellness companion. Your goal is to listen, support, and guide the user through their emotional journey. Provide short, concise, and helpful responses. Do not provide medical diagnoses."
+        system_instruction=f"You are MindWell AI, a compassionate, empathetic, and professional mental wellness companion. Your goal is to listen, support, and guide the user through their emotional journey. Provide short, concise, and helpful responses. Do not provide medical diagnoses. The user's preferred platform language is {preferred_lang}. You MUST respond in {preferred_lang} unless the user explicitly speaks otherwise."
     )
 
     # Format history
@@ -23,7 +31,12 @@ def get_gemini_response(user_message: str, history: list = None) -> str:
         for msg in history:
             role = "model" if msg.get("role") == "ai" else "user"
             text = msg.get("text", "") or msg.get("message", "")
-            formatted_history.append({"role": role, "parts": [text]})
+            
+            # Prevent consecutive same roles
+            if formatted_history and formatted_history[-1]["role"] == role:
+                formatted_history[-1]["parts"][0] += f"\n\n{text}"
+            else:
+                formatted_history.append({"role": role, "parts": [text]})
 
     # Strip leading model messages as required by Gemini API
     while formatted_history and formatted_history[0]["role"] == "model":
