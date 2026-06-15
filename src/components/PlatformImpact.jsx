@@ -8,34 +8,8 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar 
 } from 'recharts';
 
-// --- MOCK DATA ---
-const recoveryData = [
-  { name: 'Recovered', value: 78, color: '#10b981' },
-  { name: 'In Progress', value: 22, color: '#6366f1' }
-];
-
-const activeUsersData = [
-  { name: 'Mon', users: 1200 },
-  { name: 'Tue', users: 1350 },
-  { name: 'Wed', users: 1250 },
-  { name: 'Thu', users: 1500 },
-  { name: 'Fri', users: 1600 },
-  { name: 'Sat', users: 1800 },
-  { name: 'Sun', users: 1950 },
-];
-
-const moodData = [
-  { name: 'Positive', count: 4500, color: '#3b82f6' },
-  { name: 'Moderate', count: 3200, color: '#8b5cf6' },
-  { name: 'High Stress', count: 1200, color: '#f59e0b' },
-  { name: 'Critical', count: 300, color: '#ef4444' },
-];
-
-const liveActivities = [
-  { id: 1, text: "User #492 completed a meditation session", time: "Just now", icon: HeartPulse, color: "text-emerald-400" },
-  { id: 2, text: "New user joined from New York", time: "2 min ago", icon: Users, color: "text-blue-400" },
-  { id: 3, text: "Significant mood improvement detected for User #811", time: "5 min ago", icon: Sparkles, color: "text-purple-400" },
-];
+import { useState, useEffect } from 'react';
+import { getGlobalAnalyticsApi } from '../lib/api';
 
 // Custom Tooltip for charts
 const CustomTooltip = ({ active, payload, label }) => {
@@ -55,6 +29,48 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function PlatformImpact() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await getGlobalAnalyticsApi();
+        setData(result);
+      } catch (err) {
+        console.error("Failed to fetch global analytics", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-6 animate-pulse">
+        <div className="h-10 bg-slate-800 rounded w-1/4 mb-6"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-32 bg-slate-800 rounded-2xl"></div>)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-[300px] bg-slate-800 rounded-2xl"></div>
+          <div className="h-[300px] bg-slate-800 rounded-2xl"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Map icon strings back to lucide icons
+  const getIcon = (name) => {
+    switch(name) {
+      case 'HeartPulse': return HeartPulse;
+      case 'Users': return Users;
+      case 'Sparkles': return Sparkles;
+      default: return Activity;
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
       
@@ -74,12 +90,12 @@ export default function PlatformImpact() {
         </div>
       </motion.div>
 
-      {/* Top 4 Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Top 3 Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <MetricCard 
           title="Total Users" 
-          value="12,450" 
-          trend="+15%" 
+          value={data?.total_users || 0} 
+          trend="Live" 
           trendUp={true} 
           icon={Users} 
           color="blue" 
@@ -88,202 +104,53 @@ export default function PlatformImpact() {
         />
         <MetricCard 
           title="Active Treatments" 
-          value="3,820" 
-          trend="+8%" 
+          value={data?.total_users || 0} 
+          trend="Live" 
           trendUp={true} 
           icon={Activity} 
           color="purple" 
           delay={0.2}
-          subtitle="Currently on 7-day plans" 
+          subtitle="Currently improving" 
         />
         <MetricCard 
           title="Recovery Rate" 
-          value="78%" 
-          trend="+4%" 
+          value={data?.recovery_rate || "0%"} 
+          trend="Live" 
           trendUp={true} 
           icon={TrendingUp} 
           color="emerald" 
           delay={0.3}
           subtitle="Users recovered from stress" 
         />
-        <MetricCard 
-          title="Therapist Support" 
-          value="1,432" 
-          trend="+12%" 
-          trendUp={true} 
-          icon={HeartPulse} 
-          color="rose" 
-          delay={0.4}
-          subtitle="Connected with professionals" 
-        />
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Active Users Line Chart */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }} 
-          animate={{ opacity: 1, scale: 1 }} 
-          transition={{ delay: 0.3 }}
-          className="lg:col-span-2 glass-dark rounded-2xl p-6 border border-white/5 card-hover"
-        >
-          <h3 className="text-lg font-semibold text-white mb-6">Active Users (7 Days)</h3>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={activeUsersData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-                <YAxis stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="users" 
-                  stroke="#8b5cf6" 
-                  strokeWidth={3} 
-                  dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }} 
-                  activeDot={{ r: 6, fill: '#fff' }} 
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
-        {/* Recovery Ratio Pie Chart */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }} 
-          animate={{ opacity: 1, scale: 1 }} 
-          transition={{ delay: 0.4 }}
-          className="glass-dark rounded-2xl p-6 border border-white/5 card-hover flex flex-col"
-        >
-          <h3 className="text-lg font-semibold text-white mb-2">Recovery Ratio</h3>
-          <p className="text-sm text-slate-400 mb-4">Wellness plan completion vs ongoing</p>
-          <div className="flex-1 min-h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={recoveryData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {recoveryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex justify-center gap-6 mt-4">
-            {recoveryData.map(item => (
-              <div key={item.name} className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></span>
-                <span className="text-sm text-slate-300">{item.name}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Mood Distribution Bar Chart */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} 
-          animate={{ opacity: 1, y: 0 }} 
-          transition={{ delay: 0.5 }}
-          className="lg:col-span-2 glass-dark rounded-2xl p-6 border border-white/5 card-hover"
-        >
-          <h3 className="text-lg font-semibold text-white mb-6">Mood Distribution</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={moodData} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                <XAxis type="number" stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" stroke="#e2e8f0" tick={{fill: '#e2e8f0'}} axisLine={false} tickLine={false} width={80} />
-                <Tooltip content={<CustomTooltip />} cursor={{fill: 'rgba(255,255,255,0.05)'}} />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={24}>
-                  {moodData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
-        {/* Live Activity & AI Accuracy */}
-        <div className="space-y-6">
-          
-          {/* AI Accuracy */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: 0.6 }}
-            className="glass-dark rounded-2xl p-6 border border-white/5"
-          >
-            <div className="flex items-center gap-2 mb-6">
-              <BrainCircuit className="text-purple-400" size={20} />
-              <h3 className="text-lg font-semibold text-white">AI Engine Accuracy</h3>
-            </div>
-            
-            <div className="space-y-5">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-300">Sentiment Analysis</span>
-                  <span className="text-emerald-400 font-bold">98.4%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-emerald-500 to-emerald-300 h-2 rounded-full" style={{ width: '98.4%' }}></div>
-                </div>
-              </div>
-              
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-300">Burnout Detection</span>
-                  <span className="text-blue-400 font-bold">94.7%</span>
-                </div>
-                <div className="w-full bg-slate-800 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-blue-500 to-blue-300 h-2 rounded-full" style={{ width: '94.7%' }}></div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Live Activity */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: 0.7 }}
-            className="glass-dark rounded-2xl p-6 border border-white/5"
-          >
-            <div className="flex items-center gap-2 mb-5">
-              <Activity className="text-blue-400" size={20} />
-              <h3 className="text-lg font-semibold text-white">Live Activity</h3>
-            </div>
-            <div className="space-y-4">
-              {liveActivities.map((activity) => (
-                <div key={activity.id} className="flex gap-3">
-                  <div className={`mt-1 flex-shrink-0 ${activity.color}`}>
-                    <activity.icon size={16} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-200">{activity.text}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
+      {/* Active Users Line Chart (Full Width) */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }} 
+        animate={{ opacity: 1, scale: 1 }} 
+        transition={{ delay: 0.3 }}
+        className="glass-dark rounded-2xl p-6 border border-white/5 card-hover"
+      >
+        <h3 className="text-lg font-semibold text-white mb-6">Active Users (7 Days)</h3>
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data?.active_users_data || []}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="name" stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
+              <YAxis stroke="#64748b" tick={{fill: '#64748b'}} axisLine={false} tickLine={false} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line 
+                type="monotone" 
+                dataKey="users" 
+                stroke="#8b5cf6" 
+                strokeWidth={3} 
+                dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }} 
+                activeDot={{ r: 6, fill: '#fff' }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
     </div>
   );

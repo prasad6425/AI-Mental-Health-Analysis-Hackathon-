@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Send, Bot, Sparkles } from 'lucide-react'
+import { Send, Bot, Sparkles, Mic, Volume2, VolumeX, Play, StopCircle } from 'lucide-react'
 import { subscribeToChats, saveChatMessage, getChatHistory } from '../lib/db'
 import { sendChatMessageApi } from '../lib/api'
 
@@ -27,6 +27,16 @@ export default function ChatBot({ user, authUserId }) {
   const bottomRef = useRef(null)
   const { t, i18n } = useTranslation()
   const [chatLanguage, setChatLanguage] = useState(i18n.language)
+
+  const [isListening, setIsListening] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [voiceMuted, setVoiceMuted] = useState(false)
+  const recognitionRef = useRef(null)
+
+  const getSpeechLang = (lang) => {
+    const map = { en: 'en-US', hi: 'hi-IN', mr: 'mr-IN', ta: 'ta-IN' }
+    return map[lang] || 'en-US'
+  }
 
   // Keep chatLanguage in sync initially but allow divergence
   useEffect(() => {
@@ -57,9 +67,93 @@ export default function ChatBot({ user, authUserId }) {
     return () => { if (sub) sub.unsubscribe() }
   }, [authUserId, historyLoaded])
 
+  // Stop voice if component unmounts
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+      if (recognitionRef.current) {
+        recognitionRef.current.abort()
+      }
+    }
+  }, [])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, typing])
+
+  const startListening = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert("Your browser doesn't support speech recognition.")
+      return
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
+    
+    recognition.lang = getSpeechLang(chatLanguage)
+    recognition.interimResults = true
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => setIsListening(true)
+    
+    let finalTranscript = ''
+    recognition.onresult = (event) => {
+      let interimTranscript = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript
+        } else {
+          interimTranscript += transcript
+        }
+      }
+      // Populate input but wait for user to send manually
+      setInput(finalTranscript + interimTranscript)
+    }
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error)
+      setIsListening(false)
+    }
+
+    recognition.onend = () => setIsListening(false)
+
+    recognition.start()
+    recognitionRef.current = recognition
+  }
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+    }
+    setIsListening(false)
+  }
+
+  const speakResponse = (text) => {
+    if (voiceMuted || !('speechSynthesis' in window)) return
+
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = getSpeechLang(chatLanguage)
+    
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+
+    window.speechSynthesis.speak(utterance)
+  }
+
+  const replayVoice = (text) => {
+    if (!('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = getSpeechLang(chatLanguage)
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utterance)
+  }
 
   const send = async () => {
     if (!input.trim()) return
@@ -78,6 +172,8 @@ export default function ChatBot({ user, authUserId }) {
       
       // Update the UI with AI response (optimistic update since we no longer rely on realtime for this)
       setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', text: data.ai_reply }]);
+      
+      speakResponse(data.ai_reply);
     } catch (err) {
       console.error("ChatBot FastAPI error:", err)
       setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', text: "I'm having a little trouble reaching my backend right now. 💙" }]);
@@ -102,6 +198,13 @@ export default function ChatBot({ user, authUserId }) {
             <div className="text-xs text-green-400">Online • Always here for you</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <button 
+              onClick={() => setVoiceMuted(!voiceMuted)} 
+              className={`p-1.5 rounded-lg transition-colors ${voiceMuted ? 'text-red-400 bg-red-500/10' : 'text-blue-400 bg-blue-500/10'}`}
+              title={voiceMuted ? "Unmute Voice" : "Mute Voice"}
+            >
+              {voiceMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
             <select
               value={chatLanguage}
               onChange={(e) => setChatLanguage(e.target.value)}
@@ -135,10 +238,17 @@ export default function ChatBot({ user, authUserId }) {
                   <Bot size={12} className="text-white" />
                 </div>
               )}
-              <div className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-tr-sm'
-                : 'bg-slate-800/80 text-slate-200 rounded-tl-sm border border-white/5'}`}>
-                {msg.text}
+              <div className="flex flex-col gap-1 items-start max-w-[80%]">
+                <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+                  ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-tr-sm'
+                  : 'bg-slate-800/80 text-slate-200 rounded-tl-sm border border-white/5'}`}>
+                  {msg.text}
+                </div>
+                {msg.role === 'ai' && (
+                  <button onClick={() => replayVoice(msg.text)} className="text-xs text-slate-500 hover:text-blue-400 flex items-center gap-1 ml-2 transition-colors">
+                    <Play size={10} /> Replay
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}
@@ -163,8 +273,17 @@ export default function ChatBot({ user, authUserId }) {
       {/* Input */}
       <div className="p-4 border-t border-white/5 flex-shrink-0">
         <div className="flex gap-2">
+          <motion.button 
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }} 
+            onClick={isListening ? stopListening : startListening}
+            title={isListening ? "Stop Listening" : "Start Voice Input"}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0 ${isListening ? 'bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse' : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 border border-white/5'}`}>
+            {isListening ? <StopCircle size={18} /> : <Mic size={18} />}
+          </motion.button>
+          
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
-            placeholder={t('chat.placeholder')}
+            placeholder={isListening ? "Listening..." : t('chat.placeholder')}
             className="flex-1 bg-slate-800/50 border border-slate-700 focus:border-blue-500/50 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none transition-all" />
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={send}
             title={t('chat.send')}
@@ -172,8 +291,6 @@ export default function ChatBot({ user, authUserId }) {
             <Send size={16} />
           </motion.button>
         </div>
-        {/* Gemini API integration will be implemented later */}
-        <p className="text-xs text-slate-600 mt-2 text-center">Gemini API integration will be implemented later</p>
       </div>
     </div>
   )

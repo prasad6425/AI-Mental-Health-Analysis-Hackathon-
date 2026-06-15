@@ -52,4 +52,9 @@ export const submitGameBehaviorApi = async (gameType, telemetry) => {
   return response.data
 }
 
+export const getGlobalAnalyticsApi = async () => {
+  const response = await api.get('/analytics/global')
+  return response.data
+}
+
 export default api;
