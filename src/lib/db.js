@@ -138,16 +138,88 @@ export async function getSentimentLogs(userId) {
   return await supabase.from('sentiment_logs').select('*').eq('user_id', userId).order('created_at', { ascending: true })
 }
 
-// ─── THERAPISTS & BOOKINGS (NOTIFICATIONS) ───────────────────────────────────
 export async function getTherapists() {
   const { data, error } = await supabase.from('therapists').select('*')
   return { data: data || [], error }
 }
 export async function bookSession(userId, therapistName, date, time) {
-  // Save booking as a notification for the therapist
   return await supabase.from('notifications').insert({
     user_id: userId, title: 'Session Booked', message: `Session booked with ${therapistName} for ${date} at ${time}.`, type: 'booking'
   })
+}
+export async function upsertTherapistProfile(therapistId, profile) {
+  return await supabase.from('therapists').upsert({
+    id: therapistId,
+    name: profile.name,
+    email: profile.email,
+    specialization: 'General Mental Health'
+  }, { onConflict: 'id' }).select().single()
+}
+export async function assignTherapist(userId, therapistId) {
+  return await supabase.from('user_therapist_assignment').upsert({
+    user_id: userId, therapist_id: therapistId
+  }, { onConflict: 'user_id' })
+}
+export async function getAssignedTherapist(userId) {
+  const { data, error } = await supabase.from('user_therapist_assignment').select('*, therapists(*)').eq('user_id', userId).single()
+  return { data, error }
+}
+export async function getAssignedPatients(therapistId) {
+  // 1. Get assignments
+  const { data: assignments, error } = await supabase.from('user_therapist_assignment').select('*').eq('therapist_id', therapistId)
+  if (error || !assignments || assignments.length === 0) return { data: [], error }
+
+  // 2. Get user profiles for those assignments
+  const userIds = assignments.map(a => a.user_id)
+  const { data: users } = await supabase.from('users').select('*').in('id', userIds)
+
+  // 3. Merge them together
+  const merged = assignments.map(assignment => ({
+    ...assignment,
+    users: users?.find(u => u.id === assignment.user_id) || { full_name: 'Unknown Patient', email: 'unknown' }
+  }))
+
+  return { data: merged, error: null }
+}
+export async function getTherapistChats(userId, therapistId) {
+  const { data, error } = await supabase.from('therapist_chats')
+    .select('*')
+    .or(`and(sender_id.eq.${userId},receiver_id.eq.${therapistId}),and(sender_id.eq.${therapistId},receiver_id.eq.${userId})`)
+    .order('created_at', { ascending: true })
+  return { data: data || [], error }
+}
+export async function sendTherapistChat(senderId, receiverId, message) {
+  return await supabase.from('therapist_chats').insert({ sender_id: senderId, receiver_id: receiverId, message })
+}
+export async function saveTherapistFeedback(userId, therapistId, feedback) {
+  return await supabase.from('therapist_feedback').insert({
+    user_id: userId,
+    therapist_id: therapistId,
+    overall_state: feedback.overall_state,
+    stress_observation: feedback.stress_observation,
+    emotional_wellbeing: feedback.emotional_wellbeing,
+    sleep_observation: feedback.sleep_observation,
+    engagement_level: feedback.engagement_level,
+    therapist_notes: feedback.therapist_notes,
+    recommendations: feedback.recommendations,
+    followup_date: feedback.followup_date
+  })
+}
+export async function getLatestFeedback(userId) {
+  return await supabase.from('therapist_feedback').select('*, therapists(*)').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).single()
+}
+export function subscribeToTherapistChats(userId, therapistId, callback) {
+  // Listen for ANY new message inserted into therapist_chats
+  // Filter client-side so both sides of the conversation see each other's messages
+  return supabase.channel(`chat-conv-${[userId, therapistId].sort().join('-')}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'therapist_chats' }, (payload) => {
+      const { sender_id, receiver_id } = payload.new
+      const isInConversation =
+        (sender_id === userId && receiver_id === therapistId) ||
+        (sender_id === therapistId && receiver_id === userId)
+      if (isInConversation) callback(payload)
+    })
+    .subscribe()
 }
 
 // ─── WELLNESS SCORES & ANOMALY ALERTS ────────────────────────────────────────

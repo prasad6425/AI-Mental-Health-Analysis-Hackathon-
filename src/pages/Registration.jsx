@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Phone, Shield, Calendar, Heart, ArrowRight, ArrowLeft, Sparkles, Brain, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
-import { signUp, signIn, upsertUserProfile } from '../lib/db'
+import { signUp, signIn, upsertUserProfile, upsertTherapistProfile } from '../lib/db'
 
 const regSteps = ['Personal Info', 'Contact', 'Security & DOB']
 
-export default function Registration({ onRegistered, onTherapistLogin }) {
+export default function Registration({ onRegistered }) {
   const [tab, setTab] = useState('signup') // 'signup' | 'login'
+  const [role, setRole] = useState('user') // 'user' | 'therapist'
 
   return (
     <div className="min-h-screen gradient-bg flex items-center justify-center p-4 relative overflow-hidden">
@@ -23,7 +24,9 @@ export default function Registration({ onRegistered, onTherapistLogin }) {
             </div>
             <span className="text-2xl font-bold gradient-text">MindWell</span>
           </div>
-          <p className="text-slate-400 text-sm">Your AI-powered mental wellness companion</p>
+          <p className="text-slate-400 text-sm">
+            {role === 'user' ? 'Your AI-powered mental wellness companion' : 'Therapist Portal - Manage your patients'}
+          </p>
         </motion.div>
 
         {/* Tab switcher */}
@@ -38,13 +41,13 @@ export default function Registration({ onRegistered, onTherapistLogin }) {
 
         <AnimatePresence mode="wait">
           {tab === 'signup'
-            ? <SignUpForm key="signup" onRegistered={onRegistered} />
-            : <LoginForm key="login" />}
+            ? <SignUpForm key="signup" role={role} onRegistered={onRegistered} />
+            : <LoginForm key="login" role={role} onRegistered={onRegistered} />}
         </AnimatePresence>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { delay: 0.3 } }} className="text-center mt-6">
-          <button onClick={onTherapistLogin} className="text-slate-400 hover:text-teal-400 text-sm transition-colors flex items-center gap-1 mx-auto">
-            <Heart size={14} /> Are you a therapist? Access Therapist Dashboard
+          <button onClick={() => setRole(r => r === 'user' ? 'therapist' : 'user')} className="text-slate-400 hover:text-teal-400 text-sm transition-colors flex items-center gap-1 mx-auto">
+            <Heart size={14} /> {role === 'user' ? 'Are you a therapist? Access Therapist Portal' : 'Are you a user? Access User Portal'}
           </button>
         </motion.div>
       </div>
@@ -53,7 +56,7 @@ export default function Registration({ onRegistered, onTherapistLogin }) {
 }
 
 // ─── SIGN UP ──────────────────────────────────────────────────────────────────
-function SignUpForm({ onRegistered, setIsRegistering }) {
+function SignUpForm({ onRegistered, setIsRegistering, role }) {
   const [step, setStep] = useState(0)
   const [form, setForm] = useState({ name: '', email: '', phone: '', guardianPhone: '', dob: '', password: '' })
   const [errors, setErrors] = useState({})
@@ -66,14 +69,21 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
   const validate = () => {
     const e = {}
     if (step === 0 && !form.name.trim()) e.name = 'Name is required'
-    if (step === 1) {
-      if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'Valid email required'
-      if (!form.phone.match(/^\d{10}$/)) e.phone = '10-digit phone required'
-      if (!form.guardianPhone.match(/^\d{10}$/)) e.guardianPhone = '10-digit guardian number required'
-    }
-    if (step === 2) {
-      if (!form.dob) e.dob = 'Date of birth required'
-      if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
+    if (role === 'user') {
+      if (step === 1) {
+        if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'Valid email required'
+        if (!form.phone.match(/^\d{10}$/)) e.phone = '10-digit phone required'
+        if (!form.guardianPhone.match(/^\d{10}$/)) e.guardianPhone = '10-digit guardian number required'
+      }
+      if (step === 2) {
+        if (!form.dob) e.dob = 'Date of birth required'
+        if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
+      }
+    } else {
+      if (step === 1) {
+        if (!form.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) e.email = 'Valid email required'
+        if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
+      }
     }
     setErrors(e)
     return Object.keys(e).length === 0
@@ -81,6 +91,8 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
 
   const next = () => { if (validate()) setStep(s => s + 1) }
   const back = () => { setStep(s => s - 1); setServerError('') }
+  
+  const totalSteps = role === 'user' ? regSteps.length : 2;
 
   const submit = async () => {
     if (!validate()) return
@@ -110,8 +122,16 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
       return 
     }
 
-    // 2. Save profile to users table
-    const { error: profileError } = await upsertUserProfile(userId, { ...form, category })
+    // 2. Save profile
+    let profileError = null;
+    if (role === 'user') {
+      const res = await upsertUserProfile(userId, { ...form, category })
+      profileError = res.error
+    } else {
+      const res = await upsertTherapistProfile(userId, { ...form })
+      profileError = res.error
+    }
+    
     if (profileError) { 
       console.error("Profile Save Error:", profileError)
       setServerError(`Database Error: ${profileError.message || profileError.details || 'Failed to save profile'}`); 
@@ -121,7 +141,7 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
     }
 
     setLoading(false)
-    onRegistered({ ...form, age, category })
+    onRegistered({ ...form, age, category, role })
   }
 
   const age = form.dob ? new Date().getFullYear() - new Date(form.dob).getFullYear() : null
@@ -130,17 +150,17 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="glass rounded-2xl p-8 shadow-2xl">
       {/* Step progress */}
       <div className="flex items-center gap-2 mb-6">
-        {regSteps.map((s, i) => (
+        {regSteps.slice(0, totalSteps).map((s, i) => (
           <div key={i} className="flex items-center gap-2 flex-1">
             <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${i <= step ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
               {i < step ? '✓' : i + 1}
             </div>
-            {i < regSteps.length - 1 && <div className={`flex-1 h-0.5 transition-all duration-500 ${i < step ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-slate-700'}`} />}
+            {i < totalSteps - 1 && <div className={`flex-1 h-0.5 transition-all duration-500 ${i < step ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-slate-700'}`} />}
           </div>
         ))}
       </div>
 
-      <h2 className="text-lg font-semibold text-white mb-5">{regSteps[step]}</h2>
+      <h2 className="text-lg font-semibold text-white mb-5">{role === 'user' ? regSteps[step] : (step === 0 ? 'Personal Info' : 'Account Details')}</h2>
 
       {serverError && (
         <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{serverError}</div>
@@ -151,14 +171,31 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
           {step === 0 && (
             <InputField icon={<User size={15} />} label="Full Name" value={form.name} onChange={v => update('name', v)} placeholder="Enter your full name" error={errors.name} />
           )}
-          {step === 1 && (
+          {step === 1 && role === 'user' && (
             <div className="space-y-4">
               <InputField icon={<Mail size={15} />} label="Email Address" type="email" value={form.email} onChange={v => update('email', v)} placeholder="your@email.com" error={errors.email} />
               <InputField icon={<Phone size={15} />} label="Phone Number" value={form.phone} onChange={v => update('phone', v)} placeholder="10-digit number" error={errors.phone} />
               <InputField icon={<Shield size={15} />} label="Guardian's Number" value={form.guardianPhone} onChange={v => update('guardianPhone', v)} placeholder="Guardian's 10-digit number" error={errors.guardianPhone} />
             </div>
           )}
-          {step === 2 && (
+          {step === 1 && role === 'therapist' && (
+            <div className="space-y-4">
+              <InputField icon={<Mail size={15} />} label="Email Address" type="email" value={form.email} onChange={v => update('email', v)} placeholder="therapist@email.com" error={errors.email} />
+              <div>
+                <label className="text-sm text-slate-400 mb-1.5 block">Password</label>
+                <div className={`flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-800/50 border transition-all ${errors.password ? 'border-red-500/50' : 'border-slate-700 focus-within:border-blue-500/50'}`}>
+                  <Lock size={15} className="text-slate-400" />
+                  <input type={showPw ? 'text' : 'password'} value={form.password} onChange={e => update('password', e.target.value)}
+                    placeholder="Min. 6 characters" className="flex-1 bg-transparent text-white placeholder-slate-500 outline-none text-sm" />
+                  <button type="button" onClick={() => setShowPw(p => !p)} className="text-slate-400 hover:text-white">
+                    {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+                {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+              </div>
+            </div>
+          )}
+          {step === 2 && role === 'user' && (
             <div className="space-y-4">
               <InputField icon={<Calendar size={15} />} label="Date of Birth" type="date" value={form.dob} onChange={v => update('dob', v)} error={errors.dob} />
               {age !== null && (
@@ -191,9 +228,9 @@ function SignUpForm({ onRegistered, setIsRegistering }) {
             <ArrowLeft size={15} /> Back
           </button>
         )}
-        <button onClick={step < regSteps.length - 1 ? next : submit} disabled={loading}
+        <button onClick={step < totalSteps - 1 ? next : submit} disabled={loading}
           className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-semibold transition-all shadow-lg shadow-blue-500/25 disabled:opacity-60 disabled:cursor-not-allowed text-sm">
-          {loading ? <Spinner /> : step < regSteps.length - 1 ? <><span>Next</span><ArrowRight size={15} /></> : <><Sparkles size={15} /><span>Create Account</span></>}
+          {loading ? <Spinner /> : step < totalSteps - 1 ? <><span>Next</span><ArrowRight size={15} /></> : <><Sparkles size={15} /><span>Create Account</span></>}
         </button>
       </div>
     </motion.div>

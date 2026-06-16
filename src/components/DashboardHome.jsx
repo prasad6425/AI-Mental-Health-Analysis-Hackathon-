@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain, Trophy, Gamepad2 } from 'lucide-react'
-import { getWellnessScore, subscribeToWellnessScore, getAnomalyAlerts, subscribeToAnomalyAlerts, getStreaks } from '../lib/db'
+import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain, Trophy, Gamepad2, UserCheck, MessageCircle } from 'lucide-react'
+import { getWellnessScore, subscribeToWellnessScore, getAnomalyAlerts, subscribeToAnomalyAlerts, getStreaks, getAssignedTherapist } from '../lib/db'
+import TherapistConnect from './TherapistConnect'
+import UserTherapistChat from './UserTherapistChat'
+import UserFeedbackView from './UserFeedbackView'
 
 // Progress Levels
 const levels = [
@@ -29,6 +32,9 @@ export default function DashboardHome({ user }) {
   const [scoreData, setScoreData] = useState(null)
   const [alerts, setAlerts] = useState([])
   const [streakData, setStreakData] = useState({ current_streak: 0, total_xp: 0 })
+  const [assignedTherapist, setAssignedTherapist] = useState(null)
+  const [showConnectModal, setShowConnectModal] = useState(false)
+  const [showChat, setShowChat] = useState(false)
   const { t } = useTranslation()
 
   useEffect(() => {
@@ -38,6 +44,7 @@ export default function DashboardHome({ user }) {
     getWellnessScore(user.id).then(({ data }) => data && setScoreData(data))
     getStreaks(user.id).then(({ data }) => data && setStreakData(data))
     getAnomalyAlerts(user.id).then(({ data }) => data && setAlerts(data))
+    getAssignedTherapist(user.id).then(({ data }) => data && setAssignedTherapist(data.therapists))
 
     // Real-time Subscriptions
     const subScore = subscribeToWellnessScore(user.id, (payload) => setScoreData(payload.new))
@@ -227,6 +234,75 @@ export default function DashboardHome({ user }) {
           </div>
         </motion.div>
       </div>
+
+      {/* Therapist Section */}
+      {(overall < 50 || !assignedTherapist) && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-4"
+        >
+          {/* Connect with Therapist prompt */}
+          {!assignedTherapist ? (
+            <div className="lg:col-span-2 p-5 rounded-2xl bg-gradient-to-r from-teal-500/10 to-blue-500/10 border border-teal-500/20 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                <UserCheck size={22} className="text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-white">Connect with a Professional Therapist</h3>
+                <p className="text-sm text-slate-400 mt-0.5">{overall < 50 ? 'Your stress levels are high. A therapist can help.' : 'Get personalized mental health support from an expert.'}</p>
+              </div>
+              <button
+                onClick={() => setShowConnectModal(true)}
+                className="flex-shrink-0 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white text-sm font-semibold transition-all"
+              >
+                Find a Therapist
+              </button>
+            </div>
+          ) : (
+            <div className="lg:col-span-2 p-5 rounded-2xl glass border border-white/5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                {assignedTherapist.name?.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-slate-400">Your Therapist</p>
+                <h3 className="font-semibold text-white">{assignedTherapist.name}</h3>
+                <p className="text-sm text-slate-400">{assignedTherapist.specialization || 'General Mental Health'}</p>
+              </div>
+              <button
+                onClick={() => setShowChat(true)}
+                className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30 text-sm font-medium transition-all"
+              >
+                <MessageCircle size={16} />
+                Chat
+              </button>
+            </div>
+          )}
+
+          {/* Feedback Card */}
+          <UserFeedbackView userId={user.id} />
+        </motion.div>
+      )}
+
+      {/* Therapist Connect Modal */}
+      {showConnectModal && (
+        <TherapistConnect
+          userId={user.id}
+          onClose={() => setShowConnectModal(false)}
+          onAssigned={() => getAssignedTherapist(user.id).then(({ data }) => data && setAssignedTherapist(data.therapists))}
+        />
+      )}
+
+      {/* Chat Modal */}
+      {showChat && assignedTherapist && (
+        <UserTherapistChat
+          userId={user.id}
+          therapist={assignedTherapist}
+          onClose={() => setShowChat(false)}
+        />
+      )}
+
     </div>
   )
 }

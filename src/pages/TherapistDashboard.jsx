@@ -1,0 +1,99 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { LogOut, MessageCircle, ClipboardCheck, Settings } from 'lucide-react';
+import TherapistChat from '../components/therapist/TherapistChat';
+import TherapistFeedback from '../components/therapist/TherapistFeedback';
+import TherapistSettings from '../components/therapist/TherapistSettings';
+
+const tabs = [
+  { id: 'messages', label: 'Messages', icon: MessageCircle },
+  { id: 'feedback', label: 'Daily Feedback', icon: ClipboardCheck },
+  { id: 'settings', label: 'Settings', icon: Settings },
+];
+
+export default function TherapistDashboard({ user, authUserId, onLogout }) {
+  const [activeTab, setActiveTab] = useState('messages');
+
+  const titles = {
+    patients: 'My Patients',
+    messages: 'Secure Messaging',
+    feedback: 'Submit Daily Feedback',
+    settings: 'Profile Settings',
+  };
+
+  return (
+    <div className="min-h-screen gradient-bg flex">
+      {/* Sidebar */}
+      <div className="w-64 flex-shrink-0 glass-dark border-r border-white/10 flex flex-col">
+        {/* Logo */}
+        <div className="p-6 border-b border-white/5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center">
+              <ClipboardCheck size={20} className="text-white" />
+            </div>
+            <span className="text-lg font-bold gradient-text">Therapist</span>
+          </div>
+          <div className="flex items-center gap-3 mt-4">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
+              {user?.name?.charAt(0) || 'T'}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white leading-tight">{user?.name}</p>
+              <p className="text-xs text-slate-400">{user?.specialization || 'General Mental Health'}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav className="flex-1 p-4 space-y-1">
+          {tabs.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                activeTab === id
+                  ? 'bg-gradient-to-r from-teal-500/20 to-blue-500/20 text-teal-400 border border-teal-500/30 shadow-lg shadow-teal-500/10'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Icon size={18} className={activeTab === id ? 'text-teal-400' : 'text-slate-500'} />
+              <span className="font-medium">{label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Sign out */}
+        <div className="p-4 border-t border-white/5">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+          >
+            <LogOut size={18} />
+            <span className="font-medium">Sign Out</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-8 overflow-y-auto">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-6xl mx-auto"
+        >
+          <h1 className="text-3xl font-bold text-white mb-2">{titles[activeTab]}</h1>
+          <p className="text-slate-400 mb-8">
+            {activeTab === 'messages' && 'Encrypted real-time messaging with your patients.'}
+            {activeTab === 'feedback' && 'Submit a structured daily evaluation for any patient.'}
+            {activeTab === 'settings' && 'Manage your profile and availability.'}
+          </p>
+
+          {activeTab === 'messages' && <TherapistChat authUserId={authUserId} />}
+          {activeTab === 'feedback' && <TherapistFeedback authUserId={authUserId} />}
+          {activeTab === 'settings' && <TherapistSettings user={user} />}
+        </motion.div>
+      </div>
+    </div>
+  );
+}

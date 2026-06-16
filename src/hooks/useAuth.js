@@ -31,8 +31,16 @@ export function useAuth() {
     setLoading(true)
     try {
       const { data, error } = await getUserProfile(userId)
-      console.log("Fetch Profile Result:", { data, error })
-      setProfile(data)
+      if (data) {
+        setProfile({ ...data, role: 'user' })
+      } else {
+        const { data: tData } = await supabase.from('therapists').select('*').eq('id', userId).single()
+        if (tData) {
+          setProfile({ ...tData, role: 'therapist' })
+        } else {
+          setProfile(null)
+        }
+      }
     } catch (err) {
       console.error("Error fetching profile:", err)
       setProfile(null)

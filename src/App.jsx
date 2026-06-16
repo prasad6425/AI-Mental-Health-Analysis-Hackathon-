@@ -6,6 +6,7 @@ import { signOut } from './lib/db'
 import Registration from './pages/Registration'
 import Assessment from './pages/Assessment'
 import UserDashboard from './pages/UserDashboard'
+import TherapistDashboard from './pages/TherapistDashboard'
 import './index.css'
 
 export default function App() {
@@ -42,7 +43,6 @@ export default function App() {
     return <Registration 
       onRegistered={handleRegistered} 
       setIsRegistering={setIsRegistering}
-      onTherapistLogin={() => alert('Therapist Dashboard coming soon!')} 
     />
   }
 
@@ -61,12 +61,15 @@ export default function App() {
   const dashboardUser = profile
     ? {
         id: profile.id,
-        name: profile.full_name,
+        // therapists table uses `name`; users table uses `full_name`
+        name: profile.full_name || profile.name,
         email: profile.email,
         phone: profile.phone,
         guardianPhone: profile.guardian_number,
         dob: profile.dob,
         category: profile.category,
+        specialization: profile.specialization,
+        role: profile.role,   // ← 'user' or 'therapist' set by useAuth
       }
     : freshUser
 
@@ -84,6 +87,11 @@ export default function App() {
         </div>
       </div>
     )
+  }
+
+  // ── Route to appropriate dashboard based on role ────────────────────────────
+  if (dashboardUser.role === 'therapist') {
+    return <TherapistDashboard user={dashboardUser} authUserId={authUser.id} onLogout={handleLogout} />
   }
 
   return <UserDashboard user={dashboardUser} authUserId={authUser.id} onLogout={handleLogout} />
