@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, UserCheck, Star, Loader2, CheckCircle } from 'lucide-react';
 import { getTherapists, assignTherapist } from '../lib/db';
+import { toast } from '../lib/toast';
 
 export default function TherapistConnect({ userId, onClose, onAssigned }) {
   const [therapists, setTherapists] = useState([]);
@@ -23,6 +24,7 @@ export default function TherapistConnect({ userId, onClose, onAssigned }) {
     const { error } = await assignTherapist(userId, therapistId);
     if (!error) {
       setSuccess(true);
+      toast.success('Successfully connected with your new therapist!');
       setTimeout(() => {
         onAssigned && onAssigned();
         onClose();

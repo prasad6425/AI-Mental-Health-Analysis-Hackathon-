@@ -4,6 +4,7 @@ import { LogOut, MessageCircle, ClipboardCheck, Settings } from 'lucide-react';
 import TherapistChat from '../components/therapist/TherapistChat';
 import TherapistFeedback from '../components/therapist/TherapistFeedback';
 import TherapistSettings from '../components/therapist/TherapistSettings';
+import ConfirmModal from '../components/ui/ConfirmModal';
 
 const tabs = [
   { id: 'messages', label: 'Messages', icon: MessageCircle },
@@ -13,6 +14,7 @@ const tabs = [
 
 export default function TherapistDashboard({ user, authUserId, onLogout }) {
   const [activeTab, setActiveTab] = useState('messages');
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const titles = {
     patients: 'My Patients',
@@ -65,13 +67,22 @@ export default function TherapistDashboard({ user, authUserId, onLogout }) {
         {/* Sign out */}
         <div className="p-4 border-t border-white/5">
           <button
-            onClick={onLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
           >
             <LogOut size={18} />
             <span className="font-medium">Sign Out</span>
           </button>
         </div>
+
+        <ConfirmModal 
+          isOpen={showLogoutConfirm}
+          onClose={() => setShowLogoutConfirm(false)}
+          onConfirm={onLogout}
+          title="Sign out of Portal?"
+          message="You are securely ending your current session."
+          confirmText="Sign Out"
+        />
       </div>
 
       {/* Main Content */}

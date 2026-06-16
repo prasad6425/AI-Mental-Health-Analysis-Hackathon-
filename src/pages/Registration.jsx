@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Mail, Phone, Shield, Calendar, Heart, ArrowRight, ArrowLeft, Sparkles, Brain, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
 import { signUp, signIn, upsertUserProfile, upsertTherapistProfile } from '../lib/db'
+import { toast } from '../lib/toast'
 
 const regSteps = ['Personal Info', 'Contact', 'Security & DOB']
 
@@ -62,7 +63,6 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
   const [showPw, setShowPw] = useState(false)
-  const [serverError, setServerError] = useState('')
 
   const update = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })) }
 
@@ -108,7 +108,7 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
     console.log("Supabase Auth Response:", { authData, authError })
     
     if (authError) { 
-      setServerError(authError.message); 
+      toast.error(authError.message); 
       setLoading(false); 
       if (setIsRegistering) setIsRegistering(false); 
       return 
@@ -116,7 +116,7 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
 
     const userId = authData?.user?.id
     if (!userId) { 
-      setServerError('Signup failed. This email might already be registered, or check console for details.'); 
+      toast.error('Signup failed. This email might already be registered.'); 
       setLoading(false); 
       if (setIsRegistering) setIsRegistering(false);
       return 
@@ -134,13 +134,14 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
     
     if (profileError) { 
       console.error("Profile Save Error:", profileError)
-      setServerError(`Database Error: ${profileError.message || profileError.details || 'Failed to save profile'}`); 
+      toast.error(`Database Error: ${profileError.message || profileError.details || 'Failed to save profile'}`); 
       setLoading(false); 
       if (setIsRegistering) setIsRegistering(false);
       return 
     }
 
     setLoading(false)
+    toast.success('Account created successfully! 🎉')
     onRegistered({ ...form, age, category, role })
   }
 
@@ -161,10 +162,6 @@ function SignUpForm({ onRegistered, setIsRegistering, role }) {
       </div>
 
       <h2 className="text-lg font-semibold text-white mb-5">{role === 'user' ? regSteps[step] : (step === 0 ? 'Personal Info' : 'Account Details')}</h2>
-
-      {serverError && (
-        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{serverError}</div>
-      )}
 
       <AnimatePresence mode="wait">
         <motion.div key={step} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.18 }}>
@@ -242,9 +239,7 @@ function LoginForm() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
-  const [serverError, setServerError] = useState('')
   const [showPw, setShowPw] = useState(false)
-  const [success, setSuccess] = useState(false)
 
   const update = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: '' })) }
 
@@ -259,32 +254,15 @@ function LoginForm() {
   const submit = async () => {
     if (!validate()) return
     setLoading(true)
-    setServerError('')
     const { error } = await signIn(form.email, form.password)
-    if (error) { setServerError(error.message); setLoading(false); return }
-    setSuccess(true)
+    if (error) { toast.error(error.message); setLoading(false); return }
+    toast.success('Welcome back! 🎉')
     // useAuth hook in App.jsx will detect the session change and redirect automatically
-  }
-
-  if (success) {
-    return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass rounded-2xl p-8 text-center">
-        <div className="w-14 h-14 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle size={28} className="text-green-400" />
-        </div>
-        <h3 className="text-lg font-bold text-white mb-1">Welcome back! 🎉</h3>
-        <p className="text-slate-400 text-sm">Redirecting to your dashboard...</p>
-      </motion.div>
-    )
   }
 
   return (
     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="glass rounded-2xl p-8 shadow-2xl">
       <h2 className="text-lg font-semibold text-white mb-5">Welcome Back 👋</h2>
-
-      {serverError && (
-        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">{serverError}</div>
-      )}
 
       <div className="space-y-4">
         <InputField icon={<Mail size={15} />} label="Email Address" type="email" value={form.email} onChange={v => update('email', v)} placeholder="your@email.com" error={errors.email} />

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { submitGameBehaviorApi } from '../lib/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Brain, Wind, Timer, Puzzle, Smile, X, RotateCcw } from 'lucide-react'
+import { toast } from '../lib/toast'
 
 const games = [
   { id: 'memory', title: 'Memory Match', icon: Brain, color: 'from-blue-500 to-cyan-500', bg: 'from-blue-500/10 to-cyan-500/10', border: 'border-blue-500/20', desc: 'Boost focus and memory with card matching', tag: 'Focus', emoji: '🧠' },
@@ -110,12 +111,18 @@ function MemoryGame() {
     if (newSelected.length === 2) {
       const [a, b] = newSelected.map(sid => newDeck.find(c => c.id === sid))
       setTimeout(() => {
-        setDeck(d => d.map(c => {
-          if (c.id === a.id || c.id === b.id) {
-            return a.emoji === b.emoji ? { ...c, matched: true } : { ...c, flipped: false }
+        setDeck(d => {
+          const updated = d.map(c => {
+            if (c.id === a.id || c.id === b.id) {
+              return a.emoji === b.emoji ? { ...c, matched: true } : { ...c, flipped: false }
+            }
+            return c
+          })
+          if (updated.every(c => c.matched)) {
+             toast.achievement("Memory Match Complete!", 15)
           }
-          return c
-        }))
+          return updated
+        })
         setSelected([])
       }, 800)
     }

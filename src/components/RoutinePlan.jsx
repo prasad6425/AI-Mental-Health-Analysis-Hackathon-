@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, CheckCircle2, Circle, Flame, Trophy, Droplets, Music, Moon, BookOpen, Sun, Wind, Apple, Lock, ShieldAlert, HeartHandshake } from 'lucide-react'
 import { saveTaskProgress, getWellnessProgress, getMoodLogs, getStreaks, getWellnessScore } from '../lib/db'
 import { getRoutineApi, submitDailyFeedbackApi } from '../lib/api'
+import { toast } from '../lib/toast'
 
 const days = [
   { day: 1, theme: 'Fresh Start', emoji: '🌅', color: 'from-blue-500 to-cyan-500' },
@@ -115,6 +116,9 @@ export default function RoutinePlan({ authUserId }) {
     if (authUserId) {
       await saveTaskProgress(authUserId, taskId, newVal, xp)
       await fetchStreaks() // refresh XP
+      if (newVal) {
+        toast.achievement('Task Completed', xp)
+      }
     }
     setSavingTask(null)
   }
@@ -126,7 +130,7 @@ export default function RoutinePlan({ authUserId }) {
     const a4 = q4[day] || ''
 
     if (!a1 || !a2 || !a3 || !a4) {
-      alert("Please answer all 4 questions before submitting!")
+      toast.error("Please answer all 4 questions before submitting!")
       return
     }
 
@@ -136,8 +140,9 @@ export default function RoutinePlan({ authUserId }) {
     try {
       const response = await submitDailyFeedbackApi(combinedNote, day)
       setFeedbackSubmitted(prev => ({ ...prev, [day]: true }))
+      toast.success("Feedback submitted successfully!")
       if (response.therapist_unlocked) {
-        alert("🚨 Your emotional feedback indicates high stress. Therapist support has been unlocked in your dashboard.")
+        toast.warning("🚨 Your emotional feedback indicates high stress. Therapist support has been unlocked in your dashboard.")
       }
     } catch (error) {
       console.error("Daily Feedback Error:", error)

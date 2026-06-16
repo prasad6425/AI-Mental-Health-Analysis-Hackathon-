@@ -11,6 +11,8 @@ import ChatBot from '../components/ChatBot'
 import PlatformImpact from '../components/PlatformImpact'
 import Rewards from '../components/Rewards'
 import { Trophy } from 'lucide-react'
+import ConfirmModal from '../components/ui/ConfirmModal'
+import { toast } from '../lib/toast'
 
 const navItems = [
   { id: 'impact', label: 'Platform Impact', icon: Activity },
@@ -140,13 +142,13 @@ export default function UserDashboard({ user, authUserId, onLogout }) {
 }
 
 function SidebarContent({ active, setActive, onLogout, user }) {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation()
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
   return (
-    <div className="flex flex-col h-full">
-
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-white/5 flex-shrink-0">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Brand */}
+      <div className="p-5 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <Brain size={18} className="text-white" />
@@ -175,8 +177,10 @@ function SidebarContent({ active, setActive, onLogout, user }) {
           <select
             value={i18n.language}
             onChange={(e) => {
-              i18n.changeLanguage(e.target.value)
-              localStorage.setItem('appLanguage', e.target.value)
+              const newLang = e.target.value
+              i18n.changeLanguage(newLang)
+              localStorage.setItem('appLanguage', newLang)
+              toast.success(`Language changed to ${e.target.options[e.target.selectedIndex].text}`)
             }}
             className="flex-1 bg-slate-800 text-slate-300 text-xs border border-white/5 rounded px-2 py-1 outline-none focus:border-blue-500/50"
           >
@@ -215,7 +219,7 @@ function SidebarContent({ active, setActive, onLogout, user }) {
       <div className="px-3 pb-4 pt-2 border-t border-white/5 flex-shrink-0">
         <motion.button
           whileHover={{ x: 4 }}
-          onClick={onLogout}
+          onClick={() => setShowLogoutConfirm(true)}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
         >
           <LogOut size={18} />
@@ -223,6 +227,14 @@ function SidebarContent({ active, setActive, onLogout, user }) {
         </motion.button>
       </div>
 
+      <ConfirmModal 
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={onLogout}
+        title="Ready to leave?"
+        message="You are about to securely log out of your session. Come back soon!"
+        confirmText="Log Out"
+      />
     </div>
   )
 }

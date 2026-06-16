@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { getAssignedPatients, saveTherapistFeedback } from '../../lib/db';
+import { toast } from '../../lib/toast';
 
 export default function TherapistFeedback({ authUserId }) {
   const [patients, setPatients] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState(null);
 
   const [form, setForm] = useState({
     overall_state: 'Stable',
@@ -37,20 +37,18 @@ export default function TherapistFeedback({ authUserId }) {
     e.preventDefault();
     if (!selectedPatientId) return;
     setSubmitting(true);
-    setStatus(null);
 
     const { error } = await saveTherapistFeedback(selectedPatientId, authUserId, form);
     setSubmitting(false);
 
     if (error) {
-      setStatus({ type: 'error', msg: error.message || 'Failed to submit feedback' });
+      toast.error(error.message || 'Failed to submit feedback');
     } else {
-      setStatus({ type: 'success', msg: 'Feedback submitted successfully!' });
+      toast.success('Feedback submitted successfully!');
       // Reset text fields
       update('therapist_notes', '');
       update('recommendations', '');
       update('followup_date', '');
-      setTimeout(() => setStatus(null), 3000);
     }
   };
 
@@ -107,13 +105,6 @@ export default function TherapistFeedback({ authUserId }) {
             className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500/50"
           />
         </div>
-
-        {status && (
-          <div className={`p-4 rounded-xl flex items-center gap-3 ${status.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}>
-            {status.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-            <span className="text-sm font-medium">{status.msg}</span>
-          </div>
-        )}
 
         <button 
           type="submit" disabled={submitting}

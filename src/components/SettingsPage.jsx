@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Bell, Shield, Palette, Globe, Moon, Save } from 'lucide-react'
+import { toast } from '../lib/toast'
 
 export default function SettingsPage({ user }) {
   const [notifications, setNotifications] = useState({ daily: true, weekly: true, alerts: false })
   const [saved, setSaved] = useState(false)
 
-  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+  const save = () => { toast.success('Settings saved successfully!') }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -72,7 +73,7 @@ export default function SettingsPage({ user }) {
       <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} onClick={save}
         className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold shadow-lg shadow-blue-500/25">
         <Save size={16} />
-        {saved ? '✓ Saved!' : 'Save Changes'}
+        Save Changes
       </motion.button>
     </div>
   )

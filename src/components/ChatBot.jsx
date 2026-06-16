@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Send, Bot, Sparkles, Mic, Volume2, VolumeX, Play, StopCircle } from 'lucide-react'
 import { subscribeToChats, saveChatMessage, getChatHistory } from '../lib/db'
 import { sendChatMessageApi } from '../lib/api'
+import { toast } from '../lib/toast'
 
 const welcomeMessages = [
   { id: 'w1', role: 'ai', text: "Hi! I'm your MindWell AI companion 🌟 How are you feeling today?" },
@@ -121,6 +122,7 @@ export default function ChatBot({ user, authUserId }) {
     recognition.onend = () => setIsListening(false)
 
     recognition.start()
+    toast.success('Voice recognition started. Speak now.')
     recognitionRef.current = recognition
   }
 
@@ -129,6 +131,7 @@ export default function ChatBot({ user, authUserId }) {
       recognitionRef.current.stop()
     }
     setIsListening(false)
+    toast.success('Voice recognition stopped.')
   }
 
   const speakResponse = (text) => {

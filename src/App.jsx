@@ -7,6 +7,8 @@ import Registration from './pages/Registration'
 import Assessment from './pages/Assessment'
 import UserDashboard from './pages/UserDashboard'
 import TherapistDashboard from './pages/TherapistDashboard'
+import { Toaster } from 'react-hot-toast'
+import { toast } from './lib/toast'
 import './index.css'
 
 export default function App() {
@@ -21,6 +23,7 @@ export default function App() {
     setShowAssessment(false)
     setFreshUser(null)
     setIsRegistering(false)
+    toast.success('Logged out successfully')
   }
 
   const handleRegistered = (userData) => {
@@ -40,20 +43,28 @@ export default function App() {
 
   // ── Not logged in or currently in the middle of registration ───────────────
   if (!authUser || isRegistering) {
-    return <Registration 
-      onRegistered={handleRegistered} 
-      setIsRegistering={setIsRegistering}
-    />
+    return (
+      <>
+        <Toaster position="top-right" />
+        <Registration 
+          onRegistered={handleRegistered} 
+          setIsRegistering={setIsRegistering}
+        />
+      </>
+    )
   }
 
   // ── Logged in but needs assessment (fresh signup) ───────────────────────────
   if (showAssessment && freshUser) {
     return (
-      <Assessment
-        user={freshUser}
-        authUserId={authUser.id}
-        onComplete={handleAssessmentDone}
-      />
+      <>
+        <Toaster position="top-right" />
+        <Assessment
+          user={freshUser}
+          authUserId={authUser.id}
+          onComplete={handleAssessmentDone}
+        />
+      </>
     )
   }
 
@@ -91,10 +102,20 @@ export default function App() {
 
   // ── Route to appropriate dashboard based on role ────────────────────────────
   if (dashboardUser.role === 'therapist') {
-    return <TherapistDashboard user={dashboardUser} authUserId={authUser.id} onLogout={handleLogout} />
+    return (
+      <>
+        <Toaster position="top-right" />
+        <TherapistDashboard user={dashboardUser} authUserId={authUser.id} onLogout={handleLogout} />
+      </>
+    )
   }
 
-  return <UserDashboard user={dashboardUser} authUserId={authUser.id} onLogout={handleLogout} />
+  return (
+    <>
+      <Toaster position="top-right" />
+      <UserDashboard user={dashboardUser} authUserId={authUser.id} onLogout={handleLogout} />
+    </>
+  )
 }
 
 function LoadingScreen({ onClearData }) {
