@@ -170,8 +170,7 @@ export default function ChatBot({ user, authUserId }) {
 
     // Call FastAPI backend for Gemini + DistilBERT + DB saving
     try {
-      const response = await sendChatMessageApi(text, messages, chatLanguage);
-      const data = response.data;
+      const data = await sendChatMessageApi(text, messages, chatLanguage);
       
       // Update the UI with AI response (optimistic update since we no longer rely on realtime for this)
       setMessages(m => [...m, { id: Date.now() + 1, role: 'ai', text: data.ai_reply }]);
@@ -198,7 +197,6 @@ export default function ChatBot({ user, authUserId }) {
           </div>
           <div>
             <div className="text-sm font-semibold text-white">MindWell AI</div>
-            <div className="text-xs text-green-400">Online • Always here for you</div>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button 
@@ -211,21 +209,13 @@ export default function ChatBot({ user, authUserId }) {
             <select
               value={chatLanguage}
               onChange={(e) => setChatLanguage(e.target.value)}
-              className="bg-slate-800 text-slate-300 text-[10px] border border-white/5 rounded px-1.5 py-0.5 outline-none focus:border-blue-500/50"
+              className="bg-slate-800 text-slate-300 text-xs border border-white/5 rounded px-2 py-1 outline-none focus:border-blue-500/50"
             >
               <option value="en">English</option>
               <option value="hi">हिंदी</option>
               <option value="mr">मराठी</option>
               <option value="ta">தமிழ்</option>
             </select>
-            <Sparkles size={14} className="text-purple-400" />
-          </div>
-        </div>
-        {/* Real-time sentiment update from BERT will appear here */}
-        <div className="mt-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
-          <div className="text-xs text-blue-300 flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            Sentiment: Calm & Positive (BERT placeholder)
           </div>
         </div>
       </div>

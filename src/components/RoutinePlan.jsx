@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, CheckCircle2, Circle, Flame, Trophy, Droplets, Music, Moon, BookOpen, Sun, Wind, Apple, Lock, ShieldAlert, HeartHandshake } from 'lucide-react'
+import { ChevronDown, CheckCircle2, Circle, Flame, Trophy, Droplets, Music, Moon, BookOpen, Sun, Wind, Apple, Lock, ShieldAlert, HeartHandshake, Loader2, Sparkles } from 'lucide-react'
 import { saveTaskProgress, getWellnessProgress, getMoodLogs, getStreaks, getWellnessScore } from '../lib/db'
 import { getRoutineApi, submitDailyFeedbackApi } from '../lib/api'
 import { toast } from '../lib/toast'
+import confetti from 'canvas-confetti'
 
 const days = [
   { day: 1, theme: 'Fresh Start', emoji: '🌅', color: 'from-blue-500 to-cyan-500' },
@@ -140,6 +141,15 @@ export default function RoutinePlan({ authUserId }) {
     try {
       const response = await submitDailyFeedbackApi(combinedNote, day)
       setFeedbackSubmitted(prev => ({ ...prev, [day]: true }))
+      
+      // Trigger success confetti!
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#60a5fa', '#a78bfa', '#34d399']
+      })
+      
       toast.success("Feedback submitted successfully!")
       if (response.therapist_unlocked) {
         toast.warning("🚨 Your emotional feedback indicates high stress. Therapist support has been unlocked in your dashboard.")
@@ -169,7 +179,12 @@ export default function RoutinePlan({ authUserId }) {
 
   const totalTasks = days.length * Object.values(buildTasks(1)).flat().length
 
-  if (loading) return <div className="flex justify-center p-12 text-slate-400">Loading...</div>
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center p-20 text-slate-400 h-full">
+      <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
+      <p className="text-sm font-medium">Loading your personalized routine...</p>
+    </div>
+  )
 
   // Accessibility Logic
   if (stressLevel < 50) {
@@ -351,9 +366,13 @@ export default function RoutinePlan({ authUserId }) {
                               </button>
                             </div>
                           ) : (
-                            <div className="text-sm text-slate-300 bg-slate-800/50 p-3 rounded-lg border border-white/5">
-                              Your reflection has been securely analyzed by the AI and saved to your wellness timeline.
-                            </div>
+                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center text-center p-6 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl border border-blue-500/20">
+                              <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mb-3">
+                                <Sparkles size={24} className="text-blue-400" />
+                              </div>
+                              <h4 className="text-white font-bold mb-1">Reflection Saved</h4>
+                              <p className="text-sm text-slate-300">Your reflection has been securely analyzed by the AI and saved to your wellness timeline. Great job completing today's routine!</p>
+                            </motion.div>
                           )}
                         </div>
                       )}

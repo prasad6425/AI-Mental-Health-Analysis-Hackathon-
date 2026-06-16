@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain, Trophy, Gamepad2, UserCheck, MessageCircle } from 'lucide-react'
+import { TrendingUp, Zap, AlertTriangle, Heart, Activity, Target, Flame, Star, Bell, Brain, Trophy, Gamepad2, UserCheck, MessageCircle, PenLine } from 'lucide-react'
 import { getWellnessScore, subscribeToWellnessScore, getAnomalyAlerts, subscribeToAnomalyAlerts, getStreaks, getAssignedTherapist } from '../lib/db'
 import TherapistConnect from './TherapistConnect'
 import UserTherapistChat from './UserTherapistChat'
@@ -28,7 +28,7 @@ const getLevelInfo = (xp) => {
   return { ...levels[levels.length - 1], progress: 100, nextMax: Infinity }
 }
 
-export default function DashboardHome({ user }) {
+export default function DashboardHome({ user, setActiveTab }) {
   const [scoreData, setScoreData] = useState(null)
   const [alerts, setAlerts] = useState([])
   const [streakData, setStreakData] = useState({ current_streak: 0, total_xp: 0 })
@@ -75,49 +75,95 @@ export default function DashboardHome({ user }) {
   ]
 
   const levelInfo = getLevelInfo(streakData.total_xp || 0)
-  const behavioralInsight = streakData.current_streak > 3 ? "Consistent Engagement" : streakData.total_xp > 100 ? "Focus Improving" : "Needs More Practice"
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">{t('dashboard.greeting')}, {user?.name?.split(' ')[0] || 'there'} 🌅</h1>
-          <p className="text-slate-400 text-sm mt-1">{t('dashboard.subtitle')}</p>
-        </div>
-        <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-green-400 text-sm font-medium">Real-time Analysis Active</span>
+      {/* Welcome & Quick Actions */}
+      <div className="glass-dark rounded-3xl p-6 md:p-8 border border-white/5 relative overflow-hidden">
+        {/* Abstract Background Element */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">{t('dashboard.greeting')}, {user?.name?.split(' ')[0] || 'there'} 🌅</h1>
+              <p className="text-slate-400">Welcome to your safe space. How can we support you today?</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500/10 border border-green-500/20 w-fit">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-green-400 text-sm font-medium">AI Analysis Active</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {alerts.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-xl bg-red-500/20 border border-red-500/30 flex items-start gap-3">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-start gap-3">
           <Bell className="text-red-400 shrink-0 mt-0.5" size={20} />
           <div>
-            <div className="text-sm font-bold text-red-400">Critical Alert Detected</div>
-            <div className="text-xs text-red-300 mt-1">{alerts[0].alert_reason || "The AI detected an alarming pattern in your sentiment. Please consider taking a break."}</div>
+            <div className="text-sm font-bold text-red-400">Action Recommended</div>
+            <div className="text-xs text-red-300 mt-1">{alerts[0].alert_reason || "We've noticed you might be feeling overwhelmed. Please consider reaching out to your therapist or taking a deep breath."}</div>
           </div>
         </motion.div>
       )}
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map((card, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className={`glass rounded-2xl p-5 card-hover bg-gradient-to-br ${card.bg} border ${card.border}`}>
-            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center mb-3`}>
-              <card.icon size={18} className="text-white" />
-            </div>
-            <div className="text-2xl font-bold text-white">{card.value}<span className="text-sm text-slate-400">{card.unit}</span></div>
-            <div className="text-xs text-slate-400 mt-1">{card.label}</div>
-          </motion.div>
-        ))}
-      </div>
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* AI Sentiment Insight Card */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="glass rounded-2xl p-6 flex flex-col justify-center relative overflow-hidden h-full">
+        {/* Left Column (Stats & Journey) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {statCards.map((stat, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                className={`glass rounded-2xl p-4 border-t-4 border-t-${stat.color.split('-')[1]}-500`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <stat.icon size={16} className={`text-${stat.color.split('-')[1]}-400`} />
+                  <span className="text-xs font-medium text-slate-400">{stat.label}</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl font-bold text-white">{stat.value}</span>
+                  <span className="text-xs text-slate-500">{stat.unit}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Gamification / Levels */}
+          <div className="glass rounded-2xl p-6 relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
+            <div className="flex items-center justify-between mb-6 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-blue-500/20">
+                  <Trophy className="text-blue-400" size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-lg">Wellness Journey</h3>
+                  <div className={`text-sm font-bold ${levelInfo.color}`}>{levelInfo.title}</div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-black text-white">{streakData.total_xp} <span className="text-sm text-slate-400 font-medium">XP</span></div>
+                <div className="flex items-center gap-1 text-orange-400 text-sm font-medium mt-1">
+                  <Flame size={14} /> {streakData.current_streak} Day Streak
+                </div>
+              </div>
+            </div>
+            
+            <div className="w-full bg-slate-800 rounded-full h-2.5 mb-2 border border-slate-700">
+              <motion.div initial={{ width: 0 }} animate={{ width: `${levelInfo.progress}%` }} className={`h-2.5 rounded-full ${levelInfo.bg.replace('/20', '')}`} />
+            </div>
+            <div className="flex justify-between text-xs text-slate-400">
+              <span>{streakData.total_xp} XP</span>
+              <span>{levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} XP to Next Level</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (AI Insights) */}
+        <div className="space-y-6">
+          {/* AI Sentiment Insight Card */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="glass rounded-2xl p-6 flex flex-col justify-center relative overflow-hidden h-full">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl" />
           
@@ -141,98 +187,10 @@ export default function DashboardHome({ user }) {
                 </div>
               </div>
             </div>
-
-            <p className="text-sm text-slate-300 leading-relaxed bg-black/20 p-4 rounded-xl border border-white/5">
-              {stability > 70 
-                ? "The AI is actively analyzing your chats and daily reflections. Right now, your emotional state is highly positive! Your database metrics reflect a strong recovery trend."
-                : stability > 40
-                ? "Your recent interactions show a balanced, neutral emotional state. The database is tracking your mood in real-time as you interact with the bot."
-                : "The AI has detected signs of stress and anxiety in your live interactions. Your risk levels have automatically updated in the database, and your routine has been adjusted to help you recover."}
-            </p>
           </div>
         </motion.div>
 
-        {/* Live Progress */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="glass rounded-2xl p-6 space-y-6 flex flex-col justify-center">
-          <div>
-            <h3 className="font-semibold text-white mb-1">Live AI Calculations</h3>
-            <p className="text-xs text-slate-400 mb-6">These bars update instantly in the database when you chat or complete tasks.</p>
-          </div>
-
-          <div className="space-y-5">
-            {wellnessCards.map((card, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <card.icon size={16} style={{ color: card.color }} />
-                    <span className="text-sm font-medium text-slate-200">{card.label}</span>
-                  </div>
-                  <span className="text-sm font-bold text-white">{Math.round(card.value)}%</span>
-                </div>
-                <div className="h-3 bg-slate-700/50 rounded-full overflow-hidden border border-white/5">
-                  <motion.div initial={{ width: 0 }} animate={{ width: `${card.value}%` }} transition={{ duration: 1, delay: 0.4 + i * 0.1 }}
-                    className="h-full rounded-full" style={{ background: card.color }} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Current emotional state */}
-          <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-            <div className="flex justify-between items-center mb-1">
-              <div className="text-xs text-slate-400">Database Sync Status</div>
-              <div className="flex items-center gap-1.5 text-xs text-green-400">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                Live
-              </div>
-            </div>
-            <div className="text-sm font-medium text-white">Continuous Sentiment Monitoring</div>
-            <div className="text-xs text-slate-400 mt-1">Every message sent to the AI updates your burnout risk in real-time.</div>
-          </div>
-        </motion.div>
-
-        {/* Gamification & Behavioral Insights */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="glass rounded-2xl p-6 lg:col-span-2 flex flex-col md:flex-row gap-6">
-          {/* Level Progress */}
-          <div className="flex-1 flex items-center gap-4 border-b md:border-b-0 md:border-r border-white/5 pb-4 md:pb-0 md:pr-6">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center flex-shrink-0 ${levelInfo.bg}`}>
-              <Trophy size={32} className={levelInfo.color} />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-bold text-white text-lg flex items-center gap-2">
-                {t('dashboard.level')} {levelInfo.id}: {levelInfo.title}
-              </h3>
-              <p className="text-slate-400 text-sm mb-3">
-                <span className="font-bold text-amber-400">{streakData.total_xp || 0}</span> / {levelInfo.nextMax === Infinity ? 'MAX' : levelInfo.nextMax} {t('dashboard.xp')}
-              </p>
-              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }} animate={{ width: `${levelInfo.progress}%` }} 
-                  className={`h-full bg-gradient-to-r from-blue-500 to-${levelInfo.color.split('-')[1]}-400 rounded-full`} 
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Activity Streak & Game Insight */}
-          <div className="flex-1 flex flex-col justify-center gap-3">
-            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700">
-              <Flame size={20} className="text-orange-400" />
-              <div>
-                <div className="text-sm font-bold text-white">{streakData.current_streak || 0} {t('dashboard.streak')}</div>
-                <div className="text-xs text-slate-400">{t('dashboard.keep_it_up')}</div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 bg-slate-800/50 rounded-xl p-3 border border-slate-700">
-              <Gamepad2 size={20} className="text-purple-400" />
-              <div>
-                <div className="text-xs text-slate-400">{t('dashboard.game_insight')}</div>
-                <div className="text-sm font-bold text-purple-300">{behavioralInsight}</div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Therapist Section */}

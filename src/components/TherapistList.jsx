@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Star, Clock, CheckCircle, X, Calendar, MessageCircle, Lock, ShieldAlert, ChevronLeft, UserCheck } from 'lucide-react'
+import { Star, Clock, CheckCircle, X, Calendar, MessageCircle, Lock, ShieldAlert, ChevronLeft, UserCheck, Loader2 } from 'lucide-react'
 import { getTherapists, getWellnessScore, assignTherapist, getAssignedTherapist } from '../lib/db'
 import UserTherapistChat from './UserTherapistChat'
 
@@ -72,7 +72,12 @@ export default function TherapistList({ authUserId }) {
     setAssigning(false)
   }
 
-  if (loading) return <div className="flex justify-center p-12 text-slate-400">Loading...</div>
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center p-20 text-slate-400 h-full">
+      <Loader2 size={40} className="text-blue-500 animate-spin mb-4" />
+      <p className="text-sm font-medium">Finding the best therapists for you...</p>
+    </div>
+  )
 
   if (isLocked) {
     return (
@@ -164,9 +169,17 @@ export default function TherapistList({ authUserId }) {
                 {isAssigned ? (
                   <button
                     onClick={() => setActiveChatTherapist(t)}
-                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-center gap-1"
+                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-center gap-1 shadow-lg shadow-emerald-500/20"
                   >
                     <MessageCircle size={13} /> Chat Now
+                  </button>
+                ) : assignedTherapist ? (
+                  <button 
+                    disabled
+                    className="flex-1 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-500 cursor-not-allowed flex items-center justify-center gap-1"
+                    title="You are already connected to a therapist."
+                  >
+                    <UserCheck size={13} /> Connect
                   </button>
                 ) : (
                   <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
@@ -175,11 +188,6 @@ export default function TherapistList({ authUserId }) {
                   >
                     <UserCheck size={13} /> Connect
                   </motion.button>
-                )}
-                {isAssigned && (
-                  <button onClick={() => setActiveChatTherapist(t)} className="w-9 h-9 rounded-xl bg-slate-700 hover:bg-slate-600 flex items-center justify-center text-slate-400 hover:text-white transition-all">
-                    <MessageCircle size={14} />
-                  </button>
                 )}
               </div>
             </motion.div>

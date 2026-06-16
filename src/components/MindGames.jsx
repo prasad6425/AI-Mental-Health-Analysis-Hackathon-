@@ -5,11 +5,11 @@ import { Brain, Wind, Timer, Puzzle, Smile, X, RotateCcw } from 'lucide-react'
 import { toast } from '../lib/toast'
 
 const games = [
-  { id: 'memory', title: 'Memory Match', icon: Brain, color: 'from-blue-500 to-cyan-500', bg: 'from-blue-500/10 to-cyan-500/10', border: 'border-blue-500/20', desc: 'Boost focus and memory with card matching', tag: 'Focus', emoji: '🧠' },
-  { id: 'breathing', title: 'Color Breathing', icon: Wind, color: 'from-teal-500 to-green-500', bg: 'from-teal-500/10 to-green-500/10', border: 'border-teal-500/20', desc: 'Guided breathing with calming color transitions', tag: 'Calm', emoji: '🌬️' },
-  { id: 'focus', title: 'Focus Timer', icon: Timer, color: 'from-purple-500 to-pink-500', bg: 'from-purple-500/10 to-pink-500/10', border: 'border-purple-500/20', desc: 'Pomodoro-style focus challenge sessions', tag: 'Productivity', emoji: '⏱️' },
-  { id: 'puzzle', title: 'Calm Puzzle', icon: Puzzle, color: 'from-amber-500 to-orange-500', bg: 'from-amber-500/10 to-orange-500/10', border: 'border-amber-500/20', desc: 'Relaxing puzzle to ease your mind', tag: 'Relax', emoji: '🧩' },
-  { id: 'emoji', title: 'Emoji Mood Match', icon: Smile, color: 'from-rose-500 to-pink-500', bg: 'from-rose-500/10 to-pink-500/10', border: 'border-rose-500/20', desc: 'Match emotions to build self-awareness', tag: 'Awareness', emoji: '😊' },
+  { id: 'memory', title: 'Memory Match', icon: Brain, color: 'from-blue-500 to-cyan-500', bg: 'from-blue-500/10 to-cyan-500/10', border: 'border-blue-500/20', desc: 'Boost focus and memory with card matching', tag: 'Focus', emoji: '🧠', instructions: 'Tap cards to flip them. Match all the pairs of identical emojis to clear the board and improve your short-term memory!' },
+  { id: 'breathing', title: 'Color Breathing', icon: Wind, color: 'from-teal-500 to-green-500', bg: 'from-teal-500/10 to-green-500/10', border: 'border-teal-500/20', desc: 'Guided breathing with calming color transitions', tag: 'Calm', emoji: '🌬️', instructions: 'Follow the rhythm of the circle. Inhale deeply when it expands, and exhale slowly when it shrinks. Focus purely on your breath.' },
+  { id: 'focus', title: 'Focus Timer', icon: Timer, color: 'from-purple-500 to-pink-500', bg: 'from-purple-500/10 to-pink-500/10', border: 'border-purple-500/20', desc: 'Pomodoro-style focus challenge sessions', tag: 'Productivity', emoji: '⏱️', instructions: 'Start the timer and commit to a single task without any distractions. When the time is up, take a short break!' },
+  { id: 'puzzle', title: 'Calm Puzzle', icon: Puzzle, color: 'from-amber-500 to-orange-500', bg: 'from-amber-500/10 to-orange-500/10', border: 'border-amber-500/20', desc: 'Relaxing puzzle to ease your mind', tag: 'Relax', emoji: '🧩', instructions: 'Tap the puzzle pieces to rotate them. Align the colors or shapes until they form a complete, continuous pattern.' },
+  { id: 'emoji', title: 'Emoji Mood Match', icon: Smile, color: 'from-rose-500 to-pink-500', bg: 'from-rose-500/10 to-pink-500/10', border: 'border-rose-500/20', desc: 'Match emotions to build self-awareness', tag: 'Awareness', emoji: '😊', instructions: 'Read the emotional prompt at the top and select the emoji that best represents that feeling. Building emotional vocabulary reduces stress!' },
 ]
 
 export default function MindGames() {
@@ -57,7 +57,7 @@ function GameModal({ game, onClose }) {
       onClick={onClose}>
       <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
         className="glass rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <span className="text-3xl">{game.emoji}</span>
             <h2 className="text-xl font-bold text-white">{game.title}</h2>
@@ -65,6 +65,11 @@ function GameModal({ game, onClose }) {
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
+        </div>
+        
+        <div className="mb-6 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+          <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">How to play</div>
+          <p className="text-sm text-slate-300 leading-relaxed">{game.instructions}</p>
         </div>
 
         {game.id === 'memory' && <MemoryGame />}

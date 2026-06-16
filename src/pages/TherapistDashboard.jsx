@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, MessageCircle, ClipboardCheck, Settings } from 'lucide-react';
+import { LogOut, MessageCircle, ClipboardCheck, Settings, Brain } from 'lucide-react';
 import TherapistChat from '../components/therapist/TherapistChat';
 import TherapistFeedback from '../components/therapist/TherapistFeedback';
 import TherapistSettings from '../components/therapist/TherapistSettings';
@@ -29,11 +29,9 @@ export default function TherapistDashboard({ user, authUserId, onLogout }) {
       <div className="w-64 flex-shrink-0 glass-dark border-r border-white/10 flex flex-col">
         {/* Logo */}
         <div className="p-6 border-b border-white/5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center">
-              <ClipboardCheck size={20} className="text-white" />
-            </div>
-            <span className="text-lg font-bold gradient-text">Therapist</span>
+          <div className="flex items-center gap-2 mb-4">
+            <Brain size={28} className="text-blue-400" />
+            <span className="text-xl font-bold gradient-text">MindWell</span>
           </div>
           <div className="flex items-center gap-3 mt-4">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">

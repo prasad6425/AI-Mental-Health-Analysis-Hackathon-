@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { LayoutDashboard, Gamepad2, Calendar, UserCheck, Settings, LogOut, Brain, Menu, X, Activity } from 'lucide-react'
+import { LayoutDashboard, Gamepad2, Calendar, UserCheck, Settings, LogOut, Brain, Menu, X, Activity, MessageCircle } from 'lucide-react'
 import DashboardHome from '../components/DashboardHome'
 import MindGames from '../components/MindGames'
 import RoutinePlan from '../components/RoutinePlan'
@@ -13,6 +13,7 @@ import Rewards from '../components/Rewards'
 import { Trophy } from 'lucide-react'
 import ConfirmModal from '../components/ui/ConfirmModal'
 import { toast } from '../lib/toast'
+import OnboardingTour from '../components/OnboardingTour'
 
 const navItems = [
   { id: 'impact', label: 'Platform Impact', icon: Activity },
@@ -22,12 +23,27 @@ const navItems = [
   { id: 'routine', label: '7-Day Routine', icon: Calendar },
   { id: 'therapist', label: 'Therapist', icon: UserCheck },
   { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'chat', label: 'AI Chat', icon: MessageCircle, mobileOnly: true },
 ]
 
 export default function UserDashboard({ user, authUserId, onLogout }) {
-  const [active, setActive] = useState('impact')
+  const [active, setActive] = useState('dashboard')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showTour, setShowTour] = useState(false)
   const { i18n } = useTranslation()
+
+  useEffect(() => {
+    // Check if user has seen the tour
+    const tourCompleted = localStorage.getItem('mindwell_tour_completed')
+    if (!tourCompleted) {
+      setShowTour(true)
+    }
+  }, [])
+
+  const handleTourComplete = () => {
+    localStorage.setItem('mindwell_tour_completed', 'true')
+    setShowTour(false)
+  }
 
   const handleLanguageChange = (e) => {
     i18n.changeLanguage(e.target.value)
@@ -42,10 +58,16 @@ export default function UserDashboard({ user, authUserId, onLogout }) {
     routine: <RoutinePlan authUserId={authUserId} />,
     therapist: <TherapistList authUserId={authUserId} />,
     settings: <SettingsPage user={user} />,
+    chat: <div className="h-[calc(100vh-6rem)] xl:hidden"><ChatBot user={user} authUserId={authUserId} /></div>,
   }
 
   return (
-    <div className="h-screen gradient-bg flex overflow-hidden">
+    <div className="h-screen gradient-bg flex overflow-hidden relative">
+      
+      {/* ── ONBOARDING TOUR OVERLAY ── */}
+      <AnimatePresence>
+        {showTour && <OnboardingTour onComplete={handleTourComplete} />}
+      </AnimatePresence>
 
       {/* ── DESKTOP SIDEBAR (always visible ≥ lg) ── */}
       <aside className="hidden lg:flex flex-col w-64 h-screen sticky top-0 flex-shrink-0 glass-dark border-r border-white/5">
@@ -155,7 +177,6 @@ function SidebarContent({ active, setActive, onLogout, user }) {
           </div>
           <div>
             <div className="font-bold text-white leading-tight">MindWell</div>
-            <div className="text-xs text-slate-400">Wellness Platform</div>
           </div>
         </div>
       </div>
@@ -168,12 +189,10 @@ function SidebarContent({ active, setActive, onLogout, user }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-white truncate">{user?.name || 'User'}</div>
-            <div className="text-xs text-slate-400 capitalize">{user?.category || 'adult'} · Active</div>
           </div>
           <div className="w-2 h-2 rounded-full bg-green-400 flex-shrink-0 animate-pulse" />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400">🌐</span>
           <select
             value={i18n.language}
             onChange={(e) => {
@@ -182,7 +201,7 @@ function SidebarContent({ active, setActive, onLogout, user }) {
               localStorage.setItem('appLanguage', newLang)
               toast.success(`Language changed to ${e.target.options[e.target.selectedIndex].text}`)
             }}
-            className="flex-1 bg-slate-800 text-slate-300 text-xs border border-white/5 rounded px-2 py-1 outline-none focus:border-blue-500/50"
+            className="flex-1 bg-slate-800 text-slate-300 text-xs border border-white/5 rounded px-2 py-1.5 outline-none focus:border-blue-500/50"
           >
             <option value="en">English</option>
             <option value="hi">हिंदी</option>
@@ -194,25 +213,30 @@ function SidebarContent({ active, setActive, onLogout, user }) {
 
       {/* Nav items */}
       <nav className="flex-1 px-3 mt-4 space-y-1 overflow-y-auto">
-        {navItems.map(({ id, icon: Icon }) => (
-          <motion.button
-            key={id}
-            whileHover={{ x: 4 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setActive(id)}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-              active === id
-                ? 'bg-gradient-to-r from-blue-600/30 to-purple-600/30 text-white border border-blue-500/30'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Icon size={18} className={active === id ? 'text-blue-400' : 'text-slate-500'} />
-            <span>{t(`nav.${id}`)}</span>
-            {active === id && (
-              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
-            )}
-          </motion.button>
-        ))}
+        {navItems.map(({ id, icon: Icon, mobileOnly }) => {
+          // Hide mobile-only items on large screens
+          if (mobileOnly && window.innerWidth >= 1280) return null;
+          
+          return (
+            <motion.button
+              key={id}
+              whileHover={{ x: 4 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setActive(id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
+                active === id
+                  ? 'bg-gradient-to-r from-blue-600/30 to-purple-600/30 text-white border border-blue-500/30'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Icon size={18} className={active === id ? 'text-blue-400' : 'text-slate-500'} />
+              <span>{t(`nav.${id}`) || id.charAt(0).toUpperCase() + id.slice(1)}</span>
+              {active === id && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
+              )}
+            </motion.button>
+          )
+        })}
       </nav>
 
       {/* Logout */}
